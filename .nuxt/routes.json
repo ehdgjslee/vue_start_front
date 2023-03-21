@@ -1,0 +1,16 @@
+[
+  {
+    "name": "inspire",
+    "path": "/inspire",
+    "component": "/Users/leedonghun/vue_start/vue_start_front/pages/inspire.vue",
+    "chunkName": "pages/inspire",
+    "_name": "_67aa3427"
+  },
+  {
+    "name": "index",
+    "path": "/",
+    "component": "/Users/leedonghun/vue_start/vue_start_front/pages/index.vue",
+    "chunkName": "pages/index",
+    "_name": "_7ec6975f"
+  }
+]
