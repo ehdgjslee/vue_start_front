@@ -199,7 +199,7 @@ export async function setContext (app, context) {
       payload: context.payload,
       error: context.error,
       base: app.router.options.base,
-      env: {}
+      env: {"AXIOS_BASE_URL":"http://172.20.10.7:3000/","API_DEV":"http://172.20.10.7:8080/"}
     }
     // Only set once
 

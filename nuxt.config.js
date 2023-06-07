@@ -1,22 +1,24 @@
-import colors from 'vuetify/es5/util/colors'
+import colors from "vuetify/es5/util/colors";
 
 export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - start-vue',
-    title: 'start-vue',
+    titleTemplate: "%s - start-vue",
+    title: "start-vue",
     htmlAttrs: {
-      lang: 'en',
+      lang: "en",
     },
     meta: [
-      { charset: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: '' },
-      { name: 'format-detection', content: 'telephone=no' },
+      { charset: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { hid: "description", name: "description", content: "" },
+      { name: "format-detection", content: "telephone=no" },
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+    link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
   },
-
+  server: {
+    host: "0.0.0.0",
+  },
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [],
 
@@ -29,26 +31,42 @@ export default {
   // Modules for dev and build (recommended): https://go.nuxtjs.dev/config-modules
   buildModules: [
     // https://go.nuxtjs.dev/eslint
-    '@nuxtjs/eslint-module',
+    "@nuxtjs/eslint-module",
     // https://go.nuxtjs.dev/vuetify
-    '@nuxtjs/vuetify',
+    "@nuxtjs/vuetify",
   ],
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
     // https://go.nuxtjs.dev/axios
-    '@nuxtjs/axios',
+    "@nuxtjs/axios",
+    "@nuxtjs/proxy",
+    "@nuxtjs/dotenv",
   ],
-
-  // Axios module configuration: https://go.nuxtjs.dev/config-axios
-  axios: {
-    // Workaround to avoid enforcing hard-coded localhost:3000: https://github.com/nuxt-community/axios-module/issues/308
-    baseURL: '/',
+  env: {
+    // .env 설정 파일에 있는 URL값 가져와서 세팅
+    AXIOS_BASE_URL: process.env.AXIOS_BASE_URL, //front 도메인 주소
+    API_DEV: process.env.API_DEV, // backend 도메인 주소
   },
+  axios: {
+    proxy: true,
+    baseURL: process.env.AXIOS_BASE_URL,
+    proxyHeaders: false,
+    credentials: false,
+  },
+  // axios 에는 프론트 도메인 주소 설정
+  proxy: {
+    "/api/": {
+      target: process.env.API_DEV,
+      pathRewrite: { "/api/": "" }, //패스 스위칭
+      changeOrigin: true, // cors
+    },
+  },
+  // proxy 에는 백엔드 도메인 주소 설정
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
   vuetify: {
-    customVariables: ['~/assets/variables.scss'],
+    customVariables: ["~/assets/variables.scss"],
     theme: {
       dark: true,
       themes: {
@@ -67,4 +85,4 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {},
-}
+};

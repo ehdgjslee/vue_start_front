@@ -149,7 +149,7 @@ export default (ctx, inject) => {
   // baseURL
   const baseURL = process.browser
     ? (runtimeConfig.browserBaseURL || runtimeConfig.browserBaseUrl || runtimeConfig.baseURL || runtimeConfig.baseUrl || '/')
-      : (runtimeConfig.baseURL || runtimeConfig.baseUrl || process.env._AXIOS_BASE_URL_ || '/')
+      : (runtimeConfig.baseURL || runtimeConfig.baseUrl || process.env._AXIOS_BASE_URL_ || 'http://172.20.10.7:3000/')
 
   // Create fresh objects for all default header scopes
   // Axios creates only one which is shared across SSR requests!
@@ -169,15 +169,6 @@ export default (ctx, inject) => {
   const axiosOptions = {
     baseURL,
     headers
-  }
-
-  // Proxy SSR request headers headers
-  if (process.server && ctx.req && ctx.req.headers) {
-    const reqHeaders = { ...ctx.req.headers }
-    for (const h of ["accept","cf-connecting-ip","cf-ray","content-length","content-md5","content-type","host","x-forwarded-host","x-forwarded-port","x-forwarded-proto"]) {
-      delete reqHeaders[h]
-    }
-    axiosOptions.headers.common = { ...reqHeaders, ...axiosOptions.headers.common }
   }
 
   if (process.server) {
