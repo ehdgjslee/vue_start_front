@@ -9,11 +9,13 @@
       </v-row>
       <v-row>
         <v-col cols="12" md="4">
-          <v-textarea label="내용 입력" v-model="content" @keyup.enter="send"></v-textarea>
+          <v-textarea label="내용 입력" v-model="message" @keyup.enter="shortcutCheck"></v-textarea>
         </v-col>
       </v-row>
       <input type="file" id="inputImage" @change="handleFileChange" multiple />
-      <img :src="sendImgSrc" />
+      <div v-for="(item, idx) in sendImgSrcList" :key="idx">
+        <img :src="item" style="max-width: 128px;" />
+      </div>
       <v-row>
         <v-col v-if="recvList" cols="12" md="4">
           <v-card width="400" v-for="(item, idx) in recvList" :key="idx">
@@ -22,7 +24,7 @@
               <v-card-subtitle>This is a subtitle</v-card-subtitle>
             </v-card-item>
             <v-card-text>
-              {{ item.content }}
+              {{ item.contents }}
             </v-card-text>
           </v-card>
         </v-col>
@@ -39,61 +41,183 @@ export default {
   name: "socketMessenger",
   data() {
     return {
-      nickname: '닉네임',
-      content: '',
-      sendImgSrc: '',
+      // 소켓 데이터
+      stompClient: null,
+      
+      // 클라이언트 데이터
+      simpSessionId: '',
+      nickname: '',
+      message: '',
+      sendImgSrcList: [],
+      fileName: '파일을 선택하세요.',
+      file: '',
 
+      // 수신 메시지 데이터
       recvList: [],
     };
+  },
+  watch: {
+    message() {
+      this.inputContents();
+    },
   },
   mounted() {
     this.connect();
   },
   methods: {
-    addRecvData(res) {
-      const recv = JSON.parse(res.body);
-      this.recvList.push(recv);
-    },
-    connect() {
-      const serverURL = "http://172.20.10.7:8080";
-      let socket = new SockJS(serverURL); //소켓을위한 서버주소 셋팅
-      this.stompClient = Stomp.over(socket); //Stomp에 소켓 등록
-      this.stompClient.connect(
-        //등록된 소켓으로 실제로 연결
-        {},
-        () => {
-          this.stompClient.subscribe("/send", res => this.addRecvData(res), e => {const errorJson = JSON.stringify(e, null, 2); console.log(errorJson); alert(errorJson)});
-        },
-        e => {
-          console.log(JSON.stringify(e, null ,2));
-        }
-      );
-    },
-    send() {
-      if (!this.content && !this.sendImgSrc) {
-        alert("내용 입력 또는 사진 업로드 후 전송해주세요.");
-        return;
-      }
-      if (!this.stompClient || !this.stompClient.connected) {
-        alert("소켓 연결 후 전송해주세요.");
-        return;
-      }
-      const msg = {
-        nickname: this.nickname,
-        content: this.content,
-        sendImgSrc: this.sendImgSrc,
-      };
-      this.stompClient.send("/receive", JSON.stringify(msg), {});
-      this.content = '';
+    // 파일 전송
+    submit() {
+      const data = new FormData();
+      data.append('file', this.file);
+      fetch('/echo/json', {
+        method: 'POST',
+        body: data,
+      });
     },
     handleFileChange(e) {
+      if (!e?.target?.files) {
+        return;
+      }
+      const files = [...e.target.files];
+      const fileLength = this.sendImgSrcList.length + files.length;
+      if (fileLength >= 5) {
+        alert('이미지는 최대 5개까지 첨부 가능합니다.');
+        return;
+      }
+      files.forEach(file => this.addFile(file));
+    },
+    dropFile(e) {
+      if (!e?.dataTransfer?.files) {
+        return;
+      }
+      e.preventDefault();
+      const files = [...e.dataTransfer.files];
+      const fileLength = this.sendImgSrcList.length + files.length;
+      if (fileLength >= 5) {
+        alert('이미지는 최대 5개까지 첨부 가능합니다.');
+        return;
+      }
+      files.forEach(file => this.addFile(file));
+    },
+    addFile(file) {
       const ctx = this;
-      const file = e.target.files[0];
       const FR = new FileReader();
+      FR.onload = () => ctx.sendImgSrcList.push(FR.result);
       FR.readAsDataURL(file);
-      FR.onload = () => {
-        ctx.sendImgSrc = FR.result;
-      };
+    },
+    deleteImg(idx) {
+      this.sendImgSrcList.splice(idx, 1);
+    },
+    toSocketUri(uri) {
+      return '/socket/messenger/' + uri;
+    },
+    shortcutCheck(e) {
+      if (!e.shiftKey && e.key === 'Enter') {
+        this.send();
+      }
+    },
+    addRecvToList(res) {
+      const recv = JSON.parse(res.body) ?? {};
+      const lastRecv = this.recvList[this.recvList.length - 1] ?? {};
+      if (
+        lastRecv.contents && 
+        lastRecv.simpSessionId === recv.simpSessionId && 
+        lastRecv.nickname === recv.nickname
+      ) {
+        this.mergeContents(recv);
+      } else {
+        this.pushContents(recv);
+      }
+    },
+    mergeContents(recv) {
+      const _recv = { ...recv };
+      const lastRecv = this.recvList.pop();
+      this.recvList.push({ ...lastRecv, contents: `${lastRecv.contents}\n${_recv.contents}` });
+    },
+    pushContents(recv) {
+      const _recv = { ...recv };
+      delete _recv.recvImgSrcList;
+      this.recvList.push({ ..._recv });
+    },
+    pushImgSrcList(recv) {
+      const _recv = { ...recv };
+      const recvImgSrcList = _recv?.recvImgSrcList ?? [];
+      delete _recv.recvImgSrcList;
+      delete _recv.contents;
+      recvImgSrcList.forEach(recvImgSrc => this.recvList.push({ ..._recv, recvImgSrc }));
+    },
+
+    connect() {
+      if (this.stompClient?.connected) {
+        alert('이미 소켓이 연결되어있습니다.');
+        return;
+      }
+      const DOMAIN = '//192.168.1.15:8080';
+      const serverURL = `${DOMAIN}/socket/messenger`;
+      const socket = new SockJS(serverURL);
+      this.stompClient = Stomp.over(socket);
+      this.stompClient.connect(
+        {},
+        () => {
+          alert('소켓에 연결되었습니다.');
+          const paredTransportUrl = this.stompClient.ws._transport.url.split('/');
+          this.simpSessionId = paredTransportUrl[paredTransportUrl.length - 2];
+          this.stompClient.subscribe(this.toSocketUri('send'), res => this.addRecvToList(res));
+        },
+        e => this.connectionFailHandler(e),
+      );
+    },
+    connectionFailHandler(e = {}) {
+      console.log('connectio failed. data: ' + JSON.stringify(e, null, 2));
+      if (e.code === 1002) {
+        alert('소켓 연결에 실패했습니다. 백엔드 서버가 구동 중인지 확인하시기 바랍니다.');
+      } else if (e.code === 1006) {
+        alert('소켓 연결이 종료되었습니다. 백엔드 서버가 구동 중인지 확인하시기 바랍니다.');
+      } else {
+        alert('알 수 없는 이유로 소켓 연결에 실패했습니다. 자세한 정보는 콘솔로그를 확인하시기 바랍니다.');
+      }
+    },
+    send() {
+      if (!this.stompClient?.connected) {
+        alert('연결된 소켓이 없습니다. 소켓 연결 후 대화해주시기 바랍니다.');
+        return;
+      }
+      if (this.isBlank(this.nickname)) {
+        alert('닉네임 입력 후 대화해주시기 바랍니다.');
+        return;
+      }
+      this.message = this.message.trim();
+      this.stompClient.send(
+        this.toSocketUri('receive'),
+        JSON.stringify({
+          nickname: this.nickname,
+          contents: this.message,
+          sendImgSrcList: this.sendImgSrcList,
+        }),
+        {},
+      );
+      this.message = '';
+      this.sendImgSrcList.length = 0;
+    },
+    inputContents() {
+      if (!this.stompClient?.connected) {
+        return;
+      }
+      if (this.isBlank(this.nickname)) {
+        return;
+      }
+      // TODO: debounce
+    },
+    disconnect() {
+      if (!this.stompClient?.connected) {
+        alert('소켓이 연결되지 않았습니다.');
+        return;
+      }
+      this.stompClient.disconnect();
+      alert('소켓 연결이 종료되었습니다.');
+    },
+    isBlank(str) {
+      return !str || typeof str !== 'string' || str.trim() === '';
     },
   },
 };
