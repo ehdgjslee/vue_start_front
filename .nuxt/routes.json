@@ -2,13 +2,13 @@
   {
     "name": "inspire",
     "path": "/inspire",
-    "component": "/Users/leedonghun/vue_start/vue_start_front/pages/inspire.vue",
+    "component": "C:\\\\kdy\\\\Git Repository\\\\vue_start_front\\\\pages\\\\inspire.vue",
     "chunkName": "pages/inspire"
   },
   {
-    "name": "index",
-    "path": "/",
-    "component": "/Users/leedonghun/vue_start/vue_start_front/pages/index.vue",
-    "chunkName": "pages/index"
+    "name": "socketMessenger",
+    "path": "/socketMessenger",
+    "component": "C:\\\\kdy\\\\Git Repository\\\\vue_start_front\\\\pages\\\\socketMessenger\\\\index.vue",
+    "chunkName": "pages/socketMessenger/index"
   }
 ]

@@ -5,16 +5,16 @@ import ClientOnly from 'vue-client-only'
 import NoSsr from 'vue-no-ssr'
 import { createRouter } from './router.js'
 import NuxtChild from './components/nuxt-child.js'
-import NuxtError from '../layouts/error.vue'
+import NuxtError from '..\\layouts\\error.vue'
 import Nuxt from './components/nuxt.js'
 import App from './App.js'
 import { setContext, getLocation, getRouteData, normalizeError } from './utils'
 
 /* Plugins */
 
-import nuxt_plugin_plugin_3e34986e from 'nuxt_plugin_plugin_3e34986e' // Source: ./components/plugin.js (mode: 'all')
-import nuxt_plugin_plugin_96536676 from 'nuxt_plugin_plugin_96536676' // Source: ./vuetify/plugin.js (mode: 'all')
-import nuxt_plugin_axios_ef2ef742 from 'nuxt_plugin_axios_ef2ef742' // Source: ./axios.js (mode: 'all')
+import nuxt_plugin_plugin_daae772a from 'nuxt_plugin_plugin_daae772a' // Source: .\\components\\plugin.js (mode: 'all')
+import nuxt_plugin_plugin_35c44769 from 'nuxt_plugin_plugin_35c44769' // Source: .\\vuetify\\plugin.js (mode: 'all')
+import nuxt_plugin_axios_37eb410e from 'nuxt_plugin_axios_37eb410e' // Source: .\\axios.js (mode: 'all')
 
 // Component: <ClientOnly>
 Vue.component(ClientOnly.name, ClientOnly)
@@ -180,16 +180,16 @@ async function createApp(ssrContext, config = {}) {
   }
   // Plugin execution
 
-  if (typeof nuxt_plugin_plugin_3e34986e === 'function') {
-    await nuxt_plugin_plugin_3e34986e(app.context, inject)
+  if (typeof nuxt_plugin_plugin_daae772a === 'function') {
+    await nuxt_plugin_plugin_daae772a(app.context, inject)
   }
 
-  if (typeof nuxt_plugin_plugin_96536676 === 'function') {
-    await nuxt_plugin_plugin_96536676(app.context, inject)
+  if (typeof nuxt_plugin_plugin_35c44769 === 'function') {
+    await nuxt_plugin_plugin_35c44769(app.context, inject)
   }
 
-  if (typeof nuxt_plugin_axios_ef2ef742 === 'function') {
-    await nuxt_plugin_axios_ef2ef742(app.context, inject)
+  if (typeof nuxt_plugin_axios_37eb410e === 'function') {
+    await nuxt_plugin_axios_37eb410e(app.context, inject)
   }
 
   // Lock enablePreview in context
