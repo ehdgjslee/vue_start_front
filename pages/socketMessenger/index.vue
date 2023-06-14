@@ -1,12 +1,27 @@
 <template>
   <v-form>
-    <v-btn @click="connect">connect</v-btn>
+    <v-btn depressed color="primary" @click="connect">연결</v-btn>
+    <v-btn depressed color="error" @click="disconnect">연결해제</v-btn>
+    <v-btn depressed @click="() => { recvList = []; }">대화내용 삭제</v-btn>
+    <v-switch v-model="isLatestScroll" label="자동스크롤" @change="isLatestScroll"></v-switch>
     <v-container>
       <v-row>
         <v-col cols="12" sm="4">
-          <v-text-field v-model="nickname" label="ID" required></v-text-field>
+          <v-text-field v-model="nickname" label="닉네임" required></v-text-field>
         </v-col>
       </v-row>
+      <div ref="divRecvList" class="div-recv-list">
+        <div v-for="(item, idx) in recvList" :key="idx"
+          :style="`display: flex; ${simpSessionId === item.simpSessionId ? 'flex-direction: row-reverse' : ''}`"
+        >
+          <v-card min-width="200px" max-width="600px" outlined>
+            <v-card-title :style="`color: ${item.nicknameColor}; padding: 5px 5px 10px 5px`">{{ item.nickname }}</v-card-title>
+            <v-card-subtitle style="padding: 5px;">{{ item.responseTime }}</v-card-subtitle>
+            <v-card-text style="word-wrap: break-word; white-space: pre-wrap;padding: 0 10px 10px 10px;">{{ item.contents }}
+            </v-card-text>
+          </v-card>
+        </div>
+      </div>
       <v-row>
         <v-col cols="12" md="4">
           <v-textarea label="내용 입력" v-model="message" @keyup.enter="shortcutCheck"></v-textarea>
@@ -16,19 +31,6 @@
       <div v-for="(item, idx) in sendImgSrcList" :key="idx">
         <img :src="item" style="max-width: 128px;" />
       </div>
-      <v-row>
-        <v-col v-if="recvList" cols="12" md="4">
-          <v-card width="400" v-for="(item, idx) in recvList" :key="idx">
-            <v-card-item :name="idx">
-              <v-card-title>{{ item.nickname }}</v-card-title>
-              <v-card-subtitle>This is a subtitle</v-card-subtitle>
-            </v-card-item>
-            <v-card-text>
-              {{ item.contents }}
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
     </v-container>
   </v-form>
 </template>
@@ -54,14 +56,25 @@ export default {
 
       // 수신 메시지 데이터
       recvList: [],
+
+      // UX 관련
+      isLatestScroll: false,
     };
   },
   watch: {
+    recvList() {
+      this.$nextTick(() => this.divRecvListAutoScroll());
+    },
     message() {
       this.inputContents();
     },
+    isLatestScroll() {
+      this.divRecvListAutoScroll();
+    },
   },
   mounted() {
+    this.isLatestScroll = true;
+
     this.connect();
   },
   methods: {
@@ -111,10 +124,17 @@ export default {
     toSocketUri(uri) {
       return '/socket/messenger/' + uri;
     },
+
+    /**
+     * UX 관련 메소드
+     */
     shortcutCheck(e) {
       if (!e.shiftKey && e.key === 'Enter') {
         this.send();
       }
+    },
+    divRecvListAutoScroll() {
+      this.isLatestScroll && (this.$refs.divRecvList.scrollTop = this.$refs.divRecvList.scrollHeight);
     },
     addRecvToList(res) {
       const recv = JSON.parse(res.body) ?? {};
@@ -152,7 +172,7 @@ export default {
         alert('이미 소켓이 연결되어있습니다.');
         return;
       }
-      const DOMAIN = '//192.168.1.15:8080';
+      const DOMAIN = '//192.168.219.130:8080';
       const serverURL = `${DOMAIN}/socket/messenger`;
       const socket = new SockJS(serverURL);
       this.stompClient = Stomp.over(socket);
@@ -184,6 +204,11 @@ export default {
       }
       if (this.isBlank(this.nickname)) {
         alert('닉네임 입력 후 대화해주시기 바랍니다.');
+        return;
+      }
+      if (this.isBlank(this.message)) {
+        this.message = '';
+        alert('내용 입력 후 대화해주시기 바랍니다.');
         return;
       }
       this.message = this.message.trim();
@@ -222,3 +247,13 @@ export default {
   },
 };
 </script>
+<style lang="scss" scoped>
+::v-deep {
+  .div-recv-list {
+    height: 50vh;
+    scroll-behavior: auto;
+    overflow-y: auto;
+    background: gray;
+  }
+}
+</style>
